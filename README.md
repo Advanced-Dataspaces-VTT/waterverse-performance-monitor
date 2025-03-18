@@ -33,6 +33,7 @@ This setup consists of two main services:
 - **Environment Variables**:
   - `HOST`: `http://cadvisor:8080/metrics` (Fetch metrics from cAdvisor).
   - `PUSHGW`: `http://130.188.160.11:8080/metrics/job/pushgateway` (Push metrics to Prometheus Pushgateway).
+  - `HOSTNAME`: Name or your server or instance. This will identify the machine at the prometheus data.
   - `INTERVAL`: `15` (Push metrics every 15 seconds).
 - **Volumes**:
   - `./config.yaml:/config.yaml`: Mounts a configuration file for additional settings.
