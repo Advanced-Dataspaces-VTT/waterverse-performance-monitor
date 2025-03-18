@@ -25,6 +25,7 @@ services:
     environment:
       HOST: http://cadvisor:8080/metrics
       PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
+      HOSTNAME: <host_name>
       INTERVAL: 15
     volumes:
       - "./config.yaml:/config.yaml"

@@ -8,7 +8,7 @@ import sys
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
-
+HOSTNAME = os.environ.get('HOSTNAME')
 CADVISOR_METRICS_URL = os.environ.get('HOST')
 PUSHGATEWAY_URL = os.environ.get('PUSHGW')
 INTERVAL = int(os.environ.get('INTERVAL'))
@@ -52,9 +52,9 @@ while True:
                     metric = filter_empty_labels(metric)
                     metric = remove_timestamp(metric)
                     metric = metric+"\n"
-
+                    push_url = f"{PUSHGATEWAY_URL}/instance/{HOSTNAME}"
                     push_response = requests.post(
-                        PUSHGATEWAY_URL, 
+                        push_url,
                         data=metric.encode('utf-8'),
                         headers={'Content-Type': 'text/plain'}
                     )
