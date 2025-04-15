@@ -26,12 +26,34 @@ This setup consists of two main services:
   - `/dev/kmsg`: Allows logging kernel messages.
 - **Privileged Mode**: Enabled for better metric collection.
 
-### 2. `cadvisor_push`
+### 2. `dcgm-exporter`
+- **Image**: `nvcr.io/nvidia/k8s/dcgm-exporter:latest`
+- **Container Name**: `dcgm-exporter`
+- **Hostname**: `dcgm-exporter`
+- **Ports**:
+  - `9400:9400`: Exposes cAdvisor’s web UI and metrics endpoint on port 8080.
+- **cap_add**:
+      - `SYS_ADMIN`: System Administration rights
+- **gpus**: `all`: Give access to all GPU's in the system
+
+### 3. `cadvisor_push`
 - **Builds from**: `./cadvisor_push` directory (Dockerfile-based image build).
 - **Container Name**: `cadvisor_push`
 - **Hostname**: `cadvisor_push`
 - **Environment Variables**:
   - `HOST`: `http://cadvisor:8080/metrics` (Fetch metrics from cAdvisor).
+  - `PUSHGW`: `http://130.188.160.11:8080/metrics/job/pushgateway` (Push metrics to Prometheus Pushgateway).
+  - `HOSTNAME`: Name or your server or instance. This will identify the machine at the prometheus data.
+  - `INTERVAL`: `15` (Push metrics every 15 seconds).
+- **Volumes**:
+  - `./config.yaml:/config.yaml`: Mounts a configuration file for additional settings.
+
+### 4. `gpu_push`
+- **Builds from**: `./gpu_push` directory (Dockerfile-based image build).
+- **Container Name**: `gpu_push`
+- **Hostname**: `gpu_push`
+- **Environment Variables**:
+  - `HOST`: `http://dcgm-exporter:9400/metrics` (Fetch metrics from cAdvisor).
   - `PUSHGW`: `http://130.188.160.11:8080/metrics/job/pushgateway` (Push metrics to Prometheus Pushgateway).
   - `HOSTNAME`: Name or your server or instance. This will identify the machine at the prometheus data.
   - `INTERVAL`: `15` (Push metrics every 15 seconds).
