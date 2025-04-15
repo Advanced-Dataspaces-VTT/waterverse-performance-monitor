@@ -51,4 +51,4 @@ services:
       HOSTNAME: <hostname>
       INTERVAL: 15
     volumes:
-      - "./config.yaml:/config.yaml"
+      - "./config-gpu.yaml:/config.yaml"
