@@ -36,7 +36,7 @@ services:
     environment:
       HOST: http://cadvisor:8080/metrics
       PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
-      HOSTNAME: cloud_ouludatalab
+      HOSTNAME: <hostname>
       INTERVAL: 15
     volumes:
       - "./config.yaml:/config.yaml"
@@ -48,7 +48,7 @@ services:
     environment:
       HOST: http://dcgm-exporter:9400/metrics
       PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
-      HOSTNAME: cloud_ouludatalab
+      HOSTNAME: <hostname>
       INTERVAL: 15
     volumes:
       - "./config-gpu.yaml:/config.yaml"
