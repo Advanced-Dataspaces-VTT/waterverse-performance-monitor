@@ -47,21 +47,43 @@ while True:
         if response.status_code == 200:
             if response.text.startswith("# HELP") or response.text.startswith("# TYPE"):
                 metrics_lines = response.text.splitlines()
-                filtered_metrics = [line for line in metrics_lines if filter_metrics(line)]
-                for metric in filtered_metrics:
-                    metric = filter_empty_labels(metric)
-                    metric = remove_timestamp(metric)
-                    metric = metric+"\n"
-                    push_url = f"{PUSHGATEWAY_URL}/instance/{HOSTNAME}"
-                    push_response = requests.post(
-                        push_url,
-                        data=metric.encode('utf-8'),
-                        headers={'Content-Type': 'text/plain'}
-                    )
-                    if push_response.status_code == 200:
-                        count = count + 1
-                    else:
-                        failcount = failcount + 1
+                filtered_metrics = []
+                for line in metrics_lines:
+                    if filter_metrics(line):
+                        if not re.search(r' \S+$', line):
+                            print(f"Skipping line with no value: {line}")
+                        else:
+#                            line = remove_timestamp(line)
+                            line = filter_empty_labels(line)
+                            filtered_metrics.append(line)
+                metrics_payload = '\n'.join(filtered_metrics) + '\n'
+                print(f"payload: {metrics_payload}")
+                push_url = f"{PUSHGATEWAY_URL}/instance/{HOSTNAME}"
+                push_response = requests.post(
+                    push_url,
+                    data=metrics_payload.encode('utf-8'),
+                    headers={'Content-Type': 'text/plain'}
+                )
+                if push_response.status_code == 200:
+                    count = count + 1
+                else:
+                    failcount = failcount + 1
+
+#                filtered_metrics = [line for line in metrics_lines if filter_metrics(line)]
+#                for metric in filtered_metrics:
+#                    metric = filter_empty_labels(metric)
+#                    metric = remove_timestamp(metric)
+#                    metric = metric+"\n"
+#                    push_url = f"{PUSHGATEWAY_URL}/instance/{HOSTNAME}"
+#                    push_response = requests.post(
+#                        push_url,
+#                        data=metric.encode('utf-8'),
+#                        headers={'Content-Type': 'text/plain'}
+#                    )
+#                    if push_response.status_code == 200:
+#                        count = count + 1
+#                    else:
+#                        failcount = failcount + 1
                         #print(f"Failed to push metric: {push_response.status_code} - {push_response.text}")
             else:
                 print("Warning: Retrieved content is not valid Prometheus metrics!")
