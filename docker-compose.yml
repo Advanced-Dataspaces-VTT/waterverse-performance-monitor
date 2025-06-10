@@ -50,7 +50,7 @@ services:
     environment:
       HOST: http://cadvisor:8080/metrics
       PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
-      HOSTNAME: waterverse.ouludatalab.fi
+      HOSTNAME: <hostname>
       INTERVAL: 15
     volumes:
       - "./config.yaml:/config.yaml"
@@ -62,7 +62,7 @@ services:
     environment:
       HOST: http://node-exporter:9100/metrics
       PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
-      HOSTNAME: waterverse.ouludatalab.fi
+      HOSTNAME: <hostname>
       INTERVAL: 15
     volumes:
       - "./config-node.yaml:/config.yaml"
@@ -74,7 +74,7 @@ services:
     environment:
       HOST: http://dcgm-exporter:9400/metrics
       PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
-      HOSTNAME: waterverse.ouludatalab.fi
+      HOSTNAME: <hostname>
       INTERVAL: 15
     volumes:
       - "./config-gpu.yaml:/config.yaml"
