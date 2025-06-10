@@ -1,0 +1,9 @@
+allowed_metrics:
+  - node_memory_Buffers_bytes
+  - node_memory_Cached_bytes
+  - node_cpu_seconds_total
+  - node_disk_read_bytes_total
+  - node_disk_written_bytes_total
+  - node_disk_io_time_seconds_total
+  - node_network_receive_bytes_total
+  - node_network_transmit_bytes_total

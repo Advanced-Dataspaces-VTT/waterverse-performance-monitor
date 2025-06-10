@@ -18,6 +18,19 @@ services:
       - "/dev/kmsg"
     privileged: true  # Needed for some metrics
 
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node-exporter
+    hostname: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - '--path.rootfs=/host'
+
   dcgm-exporter:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:4.1.1-4.0.4-ubuntu22.04
     container_name: dcgm-exporter
@@ -26,7 +39,8 @@ services:
       - "9400:9400"
     cap_add:
       - SYS_ADMIN
-    gpus: all
+    runtime: nvidia
+#    gpus: all
     restart: "always"
 
   cadvisor_push:
@@ -36,10 +50,22 @@ services:
     environment:
       HOST: http://cadvisor:8080/metrics
       PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
-      HOSTNAME: <hostname>
+      HOSTNAME: waterverse.ouludatalab.fi
       INTERVAL: 15
     volumes:
       - "./config.yaml:/config.yaml"
+
+  node_push:
+    build: ./node_push
+    hostname: node_push
+    container_name: node_push
+    environment:
+      HOST: http://node-exporter:9100/metrics
+      PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
+      HOSTNAME: waterverse.ouludatalab.fi
+      INTERVAL: 15
+    volumes:
+      - "./config-node.yaml:/config.yaml"
 
   gpu_push:
     build: ./gpu_push
@@ -48,7 +74,7 @@ services:
     environment:
       HOST: http://dcgm-exporter:9400/metrics
       PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
-      HOSTNAME: <hostname>
+      HOSTNAME: waterverse.ouludatalab.fi
       INTERVAL: 15
     volumes:
       - "./config-gpu.yaml:/config.yaml"
