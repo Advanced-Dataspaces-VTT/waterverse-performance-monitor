@@ -9,7 +9,7 @@ sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
 HOSTNAME = os.environ.get('HOSTNAME')
-CADVISOR_METRICS_URL = os.environ.get('HOST')
+NODE_METRICS_URL = os.environ.get('HOST')
 PUSHGATEWAY_URL = os.environ.get('PUSHGW')
 INTERVAL = int(os.environ.get('INTERVAL'))
 
@@ -41,9 +41,9 @@ def filter_metrics(metric_line):
 while True:
     count = 0
     failcount = 0
-    print(f"scrape metrics from {CADVISOR_METRICS_URL}")
+    print(f"scrape metrics from {NODE_METRICS_URL}")
     try:
-        response = requests.get(CADVISOR_METRICS_URL)
+        response = requests.get(NODE_METRICS_URL)
         if response.status_code == 200:
             if response.text.startswith("# HELP") or response.text.startswith("# TYPE"):
                 metrics_lines = response.text.splitlines()
@@ -53,7 +53,6 @@ while True:
                         if not re.search(r' \S+$', line):
                             print(f"Skipping line with no value: {line}")
                         else:
-                            line = remove_timestamp(line)
                             line = filter_empty_labels(line)
                             filtered_metrics.append(line)
                 metrics_payload = '\n'.join(filtered_metrics) + '\n'

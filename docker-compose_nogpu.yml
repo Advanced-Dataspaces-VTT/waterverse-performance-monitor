@@ -31,18 +31,6 @@ services:
     command:
       - '--path.rootfs=/host'
 
-  dcgm-exporter:
-    image: nvcr.io/nvidia/k8s/dcgm-exporter:4.1.1-4.0.4-ubuntu22.04
-    container_name: dcgm-exporter
-    hostname: dcgm-exporter
-    ports:
-      - "9400:9400"
-    cap_add:
-      - SYS_ADMIN
-    runtime: nvidia
-#    gpus: all
-    restart: "always"
-
   cadvisor_push:
     build: ./cadvisor_push
     hostname: cadvisor_push
@@ -66,15 +54,3 @@ services:
       INTERVAL: 15
     volumes:
       - "./config-node.yaml:/config.yaml"
-
-  gpu_push:
-    build: ./gpu_push
-    hostname: gpu_push
-    container_name: gpu_push
-    environment:
-      HOST: http://dcgm-exporter:9400/metrics
-      PUSHGW: http://130.188.160.11:8080/metrics/job/pushgateway
-      HOSTNAME: <hostname>
-      INTERVAL: 15
-    volumes:
-      - "./config-gpu.yaml:/config.yaml"
