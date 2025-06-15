@@ -1,0 +1,54 @@
+from flask import Flask, request, jsonify
+from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
+import os
+import uuid
+
+app = Flask(__name__)
+
+PUSHGATEWAY_HOST = os.getenv("PUSHGATEWAY_HOST", "localhost")
+PUSHGATEWAY_PORT = os.getenv("PUSHGATEWAY_PORT", "9091")
+JOB_NAME = os.getenv("HOSTNAME", "event_recorder")
+
+event_store = {}
+
+@app.route("/start", methods=["POST"])
+def start_event():
+    data = request.get_json()
+    timestamp = data.get("timestamp")
+    if not timestamp:
+        return jsonify({"error": "Missing 'timestamp'"}), 400
+
+    event_id = str(uuid.uuid4())
+    event_store[event_id] = {"start": timestamp}
+
+    return jsonify({"uuid": event_id})
+
+
+@app.route("/stop", methods=["POST"])
+def stop_event():
+    data = request.get_json()
+    event_id = data.get("uuid")
+    start_time = data.get("start_timestamp")
+    stop_time = data.get("stop_timestamp")
+
+    if not event_id or start_time is None or stop_time is None:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    registry = CollectorRegistry()
+    g_start = Gauge('event_record_start', 'Start timestamp of the event', ['uuid'], registry=registry)
+    g_stop = Gauge('event_record_stop', 'Stop timestamp of the event', ['uuid'], registry=registry)
+
+    g_start.labels(uuid=event_id).set(start_time)
+    g_stop.labels(uuid=event_id).set(stop_time)
+
+    push_url = f"{PUSHGATEWAY_HOST}/instance/{HOSTNAME}"
+    try:
+        push_to_gateway(push_url, job=JOB_NAME, registry=registry)
+    except Exception as e:
+        return jsonify({"error": f"Failed to push to Pushgateway: {str(e)}"}), 500
+
+    return jsonify({"message": "Event recorded"}), 200
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)

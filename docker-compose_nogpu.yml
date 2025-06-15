@@ -54,3 +54,13 @@ services:
       INTERVAL: 15
     volumes:
       - "./config-node.yaml:/config.yaml"
+
+  event-recorder:
+    build: ./event-recorder
+    container_name: event-recorder
+    ports:
+      - "8081:5000"
+    environment:
+      PUSHGATEWAY_HOST: http://130.188.160.11
+      PUSHGATEWAY_PORT: 8080
+      HOSTNAME: waterverse.ouludatalab.fi
