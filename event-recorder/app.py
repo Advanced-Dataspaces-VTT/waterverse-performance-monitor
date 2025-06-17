@@ -46,10 +46,10 @@ def push_event(event_id, timestamp, event_type):
     g = Gauge(
         'event_record',
         'Event timestamp',
-        ['uuid', 'event_timestamp', 'type'],
+        ['uuid', 'type'],
         registry=registry
     )
-    g.labels(uuid=event_id, event_timestamp=str(timestamp), type=event_type).set(timestamp)
+    g.labels(uuid=event_id, type=event_type).set(timestamp)
 
     pushgateway_address = f"{PUSHGATEWAY_HOST}:{PUSHGATEWAY_PORT}"
     try:
