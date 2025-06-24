@@ -6,7 +6,7 @@ For GPU measurements you need to install NVidia Container Toolkit
 This setup consists of two main services:
 1. **cAdvisor**: Collects resource usage and performance metrics from Docker containers.
 2. **cadvisor_push**: A custom Python-based service that fetches metrics from cAdvisor and pushes selected metrics to Prometheus Pushgateway.
-3. **node_exporter**: Colelcts metrics from the host machine where docker / kubernetes is running 
+3. **node_exporter**: Collects metrics from the host machine where docker and/or kubernetes are running 
 4. **node_push**: pushes node exporter metrics dfined in config-node.yaml to Prometheus push gateway
 5. **dcgm-exporter**: Collects metrics form NVidia Container Toolkit and provides access to Prometheus to those metrics
 6. **gpu_push**: A custom Python-based service that fetches metrics from NVidia GPU monitor  and pushes selected metrics to Prometheus Pushgateway.
