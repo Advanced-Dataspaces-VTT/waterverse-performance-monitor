@@ -24,7 +24,7 @@ Launching the service is simple as this:
 ./install.sh
 ...
 sudo docker compose up -d
-```
+````
 Obviously you need to have docker engine and compose installed to use the install script system. Sudo may or may not be needed depending on how the Docker environment is setup at the host machine.
 
 ## Services Configuration
