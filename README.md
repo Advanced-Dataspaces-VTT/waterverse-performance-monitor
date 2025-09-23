@@ -11,7 +11,7 @@ This setup consists of two main services:
 5. **dcgm-exporter**: Collects metrics form NVidia Container Toolkit and provides access to Prometheus to those metrics
 6. **gpu_push**: A custom Python-based service that fetches metrics from NVidia GPU monitor  and pushes selected metrics to Prometheus Pushgateway.
 7. **event-recorder**: Event recorder that exposes REST API to record task start/stop events (NOTE this only needs to be in one place where the Prometheus is running)
-
+8. **data-parser**: A Flask-based service that provides REST API endpoints to query and parse Prometheus metrics for specific events based on UUIDs, calculating metric deltas between start and stop timestamps.
 
 ## Quick Start
 There is install script that creates docker-compose.yml file based on the user selection. E.g. if you only want to collect metrics from the host machine you can only include that 
@@ -80,6 +80,18 @@ Obviously you need to have docker engine and compose installed to use the instal
 - **Volumes**:
   - `./config.yaml:/config.yaml`: Mounts a configuration file for additional settings.
 
+### 5. `data-parser`
+- **Image**: `karikolehmainen/data-parser:latest`
+- **Container Name**: `data-parser`
+- **Hostname**: `data-parser`
+- **Environment Variables**:
+  - `PROM_URL`: `http://waterverse.collab-cloud.eu:9090` (URL of the Prometheus server to query metrics from).
+- **Ports**:
+  - `8081:5000`: Exposes the data-parser REST API on port 8081 (mapped to 5000 inside the container).
+- **Functionality**:
+  - Provides a `/events` endpoint (GET) to retrieve all UUIDs from Prometheus.
+  - Provides a `/event` endpoint (POST) to query and parse metrics for a specific UUID, calculating deltas between start and stop timestamps for specified metrics.
+
 ## How to Use
 1. Ensure `docker-compose.yml` and the `cadvisor_push` directory with a `Dockerfile` are present.
 2. (Optional) Modify `config.yaml` to filter/select specific metrics.
@@ -90,6 +102,62 @@ Obviously you need to have docker engine and compose installed to use the instal
 4. Access cAdvisor at `http://localhost:8080`.
 5. Verify metrics in Pushgateway at `http://130.188.160.11:8080`.
 6. Ensure Prometheus is scraping Pushgateway to retrieve metrics.
+
+### Using the `data-parser` Service
+1. **Retrieve UUIDs**:
+   - Use the `/events` endpoint to get a list of all UUIDs stored in Prometheus:
+     ```sh
+     curl http://localhost:8081/events
+     ```
+   - This returns a JSON array of UUIDs available for querying.
+
+2. **Query Metrics for an Event**:
+   - Use the `/event` endpoint to query and parse metrics for a specific UUID. You need to provide a JSON payload specifying the UUID and the metrics to query, along with the fields to include in the response.
+   - Example JSON payload for testing:
+     ```json
+     {
+       "uuid": "f5d5447e-cdab-46b7-b235-bb4d03e5698c",
+       "metrics": [
+         {
+           "metric": "container_cpu_usage_seconds_total",
+           "fields": ["exported_instance", "name", "cpu", "values"]
+         },
+         {
+           "metric": "container_memory_usage_bytes",
+           "fields": ["exported_instance", "name", "values"]
+         }
+       ]
+     }
+     ```
+   - Save the JSON payload to a file (e.g., `request.json`) and send it using `curl`:
+     ```sh
+     curl -X POST http://localhost:8081/event -H "Content-Type: application/json" -d @request.json
+     ```
+   - The response will include parsed metrics with their values and the delta (difference between the last and first value) for each metric, filtered to exclude zero deltas. The metrics are sorted by task name for clarity.
+
+3. **Expected Response**:
+   - The `/event` endpoint returns a JSON array of parsed metrics, each containing:
+     - `metric`: The metric name (e.g., `container_cpu_usage_seconds_total`).
+     - `task`: A string combining the specified fields (e.g., `exported_instance:name:cpu`).
+     - `values`: A sorted list of timestamp-value pairs.
+     - `delta`: The difference between the last and first value in the time range.
+   - Example response (simplified):
+     ```json
+     [
+       {
+         "metric": "container_cpu_usage_seconds_total",
+         "task": "instance1:container1:cpu0",
+         "values": [{"timestamp": 1631234567.0, "value": 10.0}, {"timestamp": 1631234568.0, "value": 15.0}],
+         "delta": 5.0
+       },
+       {
+         "metric": "container_memory_usage_bytes",
+         "task": "instance1:container1",
+         "values": [{"timestamp": 1631234567.0, "value": 1048576.0}, {"timestamp": 1631234568.0, "value": 2097152.0}],
+         "delta": 1048576.0
+       }
+     ]
+     ```
 
 ## Troubleshooting
 - Check logs for errors:
