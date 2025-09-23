@@ -159,6 +159,96 @@ Obviously you need to have docker engine and compose installed to use the instal
      ]
      ```
 
+### Using REST API's from Python script
+Event-recorder and data-parser can be used together from Python script with relatively simply. Here is concise way of using the API's to record data from scripted test cases.
+First order of business is define URLs where the API's are reachable. For instance:
+```python
+EVENT_URL  = "http://localhost:8080"
+PARSER_URL = "http://localhost:8081"
+```
+Then you can add three simple wrappers to call the API's from the test. To record the start of test you can implement this kind of wrapper:
+```python
+def start_test():
+    uuid = ""
+    timestamp = int(time.time())
+    payload = {
+        "timestamp": timestamp
+    }
+    response = requests.post(f"{BASE_URL}/start", json=payload)
+    print(f"[DEBUG] Raw response text: {response.text}")
+    if response.status_code == 200:
+        uuid = response.json().get("uuid")
+        print(f"[START] Event UUID: {uuid}, Timestamp: {timestamp}")
+        return uuid
+    else:
+        print(f"[START] Failed: {response.status_code} {response.text}")
+        return None
+```
+Note that you need to save the UUID returned by start_test() so you can use in the stop test call and data parsing.
+After routines are finished you can call stop_test with the UUID provided by the start_test wrapper
+```python
+def stop_test(uuid):
+    timestamp = int(time.time())
+    payload = {
+        "uuid": uuid,
+        "timestamp": timestamp
+    }
+    response = requests.post(f"{BASE_URL}/stop", json=payload)
+    if response.status_code == 200:
+        print(f"[STOP] Event UUID: {uuid}, Timestamp: {timestamp}")
+    else:
+        print(f"[STOP] Failed: {response.status_code} {response.text}")
+```
+This is the basic use, now the event record is stored in Prometheus database and can be retrieved later. 
+Optionaly now you can also call the data-parser endopoint to retrieve the relevant metrics. For that you need to have metrics defined in JSON structure like this:
+```json
+{
+  "metrics": [
+    {
+      "metric": "container_cpu_usage_seconds_total",
+      "fields": ["exported_instance", "name", "cpu", "values"]
+    },
+    {
+      "metric": "container_memory_usage_bytes",
+      "fields": ["exported_instance", "name", "values"]
+    }
+  ]
+}
+```
+You can then implement wrapper to print metrics from the test case like this:
+```python
+def print_analytics(uuid, metrics):
+    payload = {
+        "uuid": uuid,
+        "metrics": metrics["metrics"] if isinstance(metrics, dict) and "metrics" in metrics else metrics
+    }
+    try:
+        r = requests.post(f"{API_URL}/event", json=payload, timeout=60)
+        r.raise_for_status()
+        data = r.json()
+    except requests.RequestException as e:
+        print(f"Error calling /event endpoint: {e}")
+        return
+    except ValueError:
+        print("Error decoding JSON response")
+        return
+
+    print("=========== ANALYTICS ===========")
+    print(json.dumps(data, indent=2))
+```
+Before calling the print_analytics you should allow some time for Prometheus to absorb the metrics. There is some delay as metrics from distributed system are collected
+using push gateway and Prometheus periodically scrapes the metrics from the gateway. Good rule of thumb is to allow at least 15 seconds before retriving metrics.
+
+You can also store the metrics JSON to file and read it when calling the print_analytics wrapper. Like this:
+```python
+...
+    stop_test(uuid)
+    time.sleep(30) # Wait metrics to be absorbed into Prometheus
+    with open("metrics.json", "r") as f:
+        print_analytics(uuid, json.load(f))
+...
+```
+
 ## Troubleshooting
 - Check logs for errors:
   ```sh
